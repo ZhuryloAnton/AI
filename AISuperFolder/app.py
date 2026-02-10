@@ -29,16 +29,20 @@ tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL)
 # =====================
 model = AutoModelForCausalLM.from_pretrained(
     BASE_MODEL,
-    torch_dtype=torch.float32
+    torch_dtype=torch.float16
 ).to(device)
 
-
-# =====================
-# ADAPTER
-# ❌ common mistake: thinking this is a merge (it is NOT)
-# =====================
 model = PeftModel.from_pretrained(model, ADAPTER)
 model.eval()
+
+with torch.no_grad():
+    output = model.generate(
+        **inputs,
+        max_new_tokens=200,
+        do_sample=False,  # deterministic
+        eos_token_id=tokenizer.eos_token_id
+    )
+
 
 
 # =====================
@@ -160,8 +164,7 @@ with torch.no_grad():
     output = model.generate(
         **inputs,
         max_new_tokens=200,
-        do_sample=False,
-        temperature=0.0,
+        do_sample=False,  # deterministic
         eos_token_id=tokenizer.eos_token_id
     )
 
