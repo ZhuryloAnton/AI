@@ -1,8 +1,5 @@
-torch==2.1.2
-transformers>=4.39.0
-peft>=0.8.2
+torch
+transformers==4.48.3
+peft
 accelerate
-fastapi
-uvicorn
-psutil
-safetensors
+tqdm
