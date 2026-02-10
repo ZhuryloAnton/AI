@@ -1,12 +1,3 @@
-# ---- Phi-4 compatibility patch (MUST be first) ----
-import transformers.modeling_flash_attention_utils as fa_utils
-
-if not hasattr(fa_utils, "FlashAttentionKwargs"):
-    class FlashAttentionKwargs(dict):
-        pass
-    fa_utils.FlashAttentionKwargs = FlashAttentionKwargs
-# --------------------------------------------------
-
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from peft import PeftModel
