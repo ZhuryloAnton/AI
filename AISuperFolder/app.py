@@ -1,88 +1,61 @@
 import torch
-from transformers import AutoTokenizer, AutoModelForCausalLM
+from transformers import AutoModelForCausalLM, AutoTokenizer
 from peft import PeftModel
 
-# ---------------------
-# CONFIG
-# ---------------------
 BASE_MODEL = "microsoft/phi-4-mini-instruct"
-ADAPTER = "rmtlabs/phi-4-mini-adapter-v1"
+ADAPTER_MODEL = "rmtlabs/phi-4-mini-adapter-v1"
+
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
-print(">>> Device:", device, flush=True)
+print("Loading tokenizer...")
+tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL, trust_remote_code=True)
 
-# ---------------------
-# TOKENIZER
-# ---------------------
-tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL)
-tokenizer.pad_token = tokenizer.eos_token
-
-# ---------------------
-# MODEL
-# ---------------------
-print(">>> Loading model...", flush=True)
-
-model = AutoModelForCausalLM.from_pretrained(
+print("Loading base model...")
+base_model = AutoModelForCausalLM.from_pretrained(
     BASE_MODEL,
-    dtype=torch.float16
-).to(device)
+    torch_dtype=torch.float16,
+    device_map="auto",
+    trust_remote_code=True
+)
 
-model = PeftModel.from_pretrained(model, ADAPTER)
+print("Loading adapter...")
+model = PeftModel.from_pretrained(
+    base_model,
+    ADAPTER_MODEL
+)
+
 model.eval()
-model.config.pad_token_id = tokenizer.eos_token_id
-
-print(">>> Model loaded", flush=True)
-
-# ---------------------
-# LONG INPUT
-# ---------------------
-cv_text = """
-ARTEM ANTONENKO
-Head of Engineering | CTO | Engineering Executive
-18+ years experience. Led 100+ engineers. Built AI systems.
-""" * 20   # <- artificially long prompt
-
-prompt = f"""
-Read the CV below and answer ONE question.
-
-Question: What is the candidate's seniority level?
-
-CV:
-{cv_text}
-
-Answer:
+text = """
+    CV
+Name: Anton Polisko
+I know Java, Python, Java Scritp and C#
+I studied in Harvard University
+I have 10 years experience in Java BackEnd development
 """
 
-# ---------------------
-# TOKENIZE
-# ---------------------
-print(">>> Tokenizing input...", flush=True)
 
-inputs = tokenizer(prompt, return_tensors="pt")
-inputs = {k: v.to(device) for k, v in inputs.items()}
+prompt = (f"""Take a look on CV, convert all information in understendable json format, like
+          {
+            "skills":"skill"
+            "experience":"experience"
+            "education":"education"
+          }
+          CV
+          f{text}
+"""
 
-print(">>> Input tokens:", inputs["input_ids"].shape[1], flush=True)
 
-# ---------------------
-# GENERATE
-# ---------------------
-print(">>> Starting generation...", flush=True)
+
+inputs = tokenizer(prompt, return_tensors="pt").to(device)
 
 with torch.no_grad():
-    output = model.generate(
+    outputs = model.generate(
         **inputs,
-        max_new_tokens=50,
-        do_sample=False,
-        eos_token_id=tokenizer.eos_token_id
+        max_new_tokens=150,
+        temperature=0.7,
+        do_sample=True
     )
 
-print(">>> Generation finished", flush=True)
-
-# ---------------------
-# DECODE
-# ---------------------
-generated_tokens = output[0][inputs["input_ids"].shape[1]:]
-result = tokenizer.decode(generated_tokens, skip_special_tokens=True)
-
-print("\n=== MODEL OUTPUT ===")
+result = tokenizer.decode(outputs[0], skip_special_tokens=True)
+print("\n=== MODEL OUTPUT ===\n")
 print(result)
