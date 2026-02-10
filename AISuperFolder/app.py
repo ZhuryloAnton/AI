@@ -29,9 +29,8 @@ tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL)
 # =====================
 model = AutoModelForCausalLM.from_pretrained(
     BASE_MODEL,
-    torch_dtype=torch.float16 if device == "cuda" else torch.float32,
-    device_map="auto"
-)
+    torch_dtype=torch.float32
+).to(device)
 
 
 # =====================
@@ -161,8 +160,9 @@ with torch.no_grad():
     output = model.generate(
         **inputs,
         max_new_tokens=200,
-        temperature=0.7,
-        do_sample=True
+        do_sample=False,
+        temperature=0.0,
+        eos_token_id=tokenizer.eos_token_id
     )
 
 
