@@ -12,7 +12,7 @@ tokenizer = AutoTokenizer.from_pretrained(
     trust_remote_code=True
 )
 
-base_model = AutoModeForCausalLM.from_pretrained(
+base_model = AutoModelForCausalLM.from_pretrained(
     BASE_MODEL,
     dtype = torch.float16,
     device_map="auto",
