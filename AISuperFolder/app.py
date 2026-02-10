@@ -8,7 +8,12 @@ ADAPTER_MODEL = "rmtlabs/phi-4-mini-adapter-v1"
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 print("Loading tokenizer...")
-tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL, trust_remote_code=True)
+tokenizer = AutoTokenizer.from_pretrained(
+    BASE_MODEL,
+    trust_remote_code=True,
+    use_fast=False
+)
+
 
 print("Loading base model...")
 base_model = AutoModelForCausalLM.from_pretrained(
