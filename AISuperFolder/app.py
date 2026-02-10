@@ -8,9 +8,10 @@ BASE_MODEL = "microsoft/phi-4-mini-instruct"
 ADAPTER_MODEL = "rmtlabs/phi-4-mini-adapter-v1"
 
 tokenizer = AutoTokenizer.from_pretrained(
-    ADAPTER_MODEL,
+    BASE_MODEL,
     trust_remote_code=True
 )
+
 
 base_model = AutoModelForCausalLM.from_pretrained(
     BASE_MODEL,
