@@ -1,40 +1,37 @@
-import torch
+import torch, json, re
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from peft import PeftModel
-import json
-from tqdm import tqdm
 
 BASE_MODEL = "microsoft/phi-4-mini-instruct"
 ADAPTER_MODEL = "rmtlabs/phi-4-mini-adapter-v1"
 
-tokenizer = AutoTokenizer.from_pretrained(
-    BASE_MODEL,
-    trust_remote_code=True
-)
-
+tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL, trust_remote_code=True)
 
 base_model = AutoModelForCausalLM.from_pretrained(
     BASE_MODEL,
-    dtype = torch.float16,
+    dtype=torch.float16,
     device_map="auto",
     trust_remote_code=True
 )
 
-model = PeftModel.from_pretrained(
-    base_model,
-    ADAPTER_MODEL
-)
+model = PeftModel.from_pretrained(base_model, ADAPTER_MODEL)
+model.eval()
 
-prompt = """
-You extract structured CV information.
-Return ONLY valid JSON.
-
-CV:
+messages = [
+    {"role": "system", "content": "Extract CV data and return ONLY valid JSON."},
+    {"role": "user", "content": """
 Name: Anton Polisko
 Skills: Java, Python
 Education: Harvard
 Experience: 10 years Java
-"""
+"""}
+]
+
+prompt = tokenizer.apply_chat_template(
+    messages,
+    tokenize=False,
+    add_generation_prompt=True
+)
 
 inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
 
@@ -45,10 +42,8 @@ with torch.no_grad():
         do_sample=False
     )
 
-result = tokenizer.decode(
-    outputs[0],
-    skip_special_tokens=True
-)
-print("Parse Json")
-data = json.loads(result)
+text = tokenizer.decode(outputs[0], skip_special_tokens=True)
+json_text = re.search(r"\{.*\}", text, re.S).group()
+data = json.loads(json_text)
 
+print(data)
