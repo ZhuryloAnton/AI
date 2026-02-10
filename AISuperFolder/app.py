@@ -43,7 +43,7 @@ prompt = (f"""Take a look on CV, convert all information in understendable json 
           CV
           f{text}
 """
-
+          )
 
 
 inputs = tokenizer(prompt, return_tensors="pt").to(device)
