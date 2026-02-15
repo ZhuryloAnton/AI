@@ -1,18 +1,26 @@
 import torch
+import json
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from peft import PeftModel
 
+# -----------------------------
+# CONFIG
+# -----------------------------
 base_model_id = "microsoft/Phi-4-mini-instruct"
 adapter_id = "rmtlabs/phi-4-mini-adapter-v1"
 
-# Load tokenizer
+# -----------------------------
+# LOAD TOKENIZER
+# -----------------------------
 tokenizer = AutoTokenizer.from_pretrained(
     base_model_id,
     trust_remote_code=True,
-    use_fast=False   # VERY IMPORTANT
+    use_fast=False
 )
 
-# Load base model FIRST
+# -----------------------------
+# LOAD BASE MODEL
+# -----------------------------
 base_model = AutoModelForCausalLM.from_pretrained(
     base_model_id,
     device_map="auto",
@@ -20,7 +28,9 @@ base_model = AutoModelForCausalLM.from_pretrained(
     trust_remote_code=True
 )
 
-# THEN attach adapter
+# -----------------------------
+# ATTACH ADAPTER
+# -----------------------------
 model = PeftModel.from_pretrained(
     base_model,
     adapter_id
@@ -31,7 +41,9 @@ model_device = next(model.parameters()).device
 
 print("✅ Model + Adapter loaded successfully")
 
-
+# -----------------------------
+# SAMPLE CV
+# -----------------------------
 cv_text = """
 John Smith
 Email: john.smith@email.com
@@ -49,9 +61,10 @@ Education:
 BSc Computer Science, University of California, 2020
 """
 
+# -----------------------------
+# PROMPT
+# -----------------------------
 prompt = f"""
-You are a CV parser.
-
 Extract information from the CV and return ONLY valid JSON.
 
 Format:
@@ -66,28 +79,62 @@ Format:
 
 CV:
 {cv_text}
-
-JSON:
 """
 
-inputs = tokenizer(prompt, return_tensors="pt").to(model_device)
+# -----------------------------
+# CHAT FORMAT (IMPORTANT)
+# -----------------------------
+messages = [
+    {
+        "role": "system",
+        "content": "You are a professional CV parser. Return ONLY valid JSON. No explanations."
+    },
+    {
+        "role": "user",
+        "content": prompt
+    }
+]
 
+inputs = tokenizer.apply_chat_template(
+    messages,
+    return_tensors="pt"
+)
+
+inputs = {k: v.to(model_device) for k, v in inputs.items()}
+
+# -----------------------------
+# GENERATE
+# -----------------------------
 with torch.no_grad():
     output = model.generate(
         **inputs,
         max_new_tokens=400,
-        temperature=0.1,
         do_sample=False
     )
 
-full_output = tokenizer.decode(output[0], skip_special_tokens=True)
-result = full_output.split("JSON:")[-1].strip()
+decoded = tokenizer.decode(output[0], skip_special_tokens=True)
+
+# -----------------------------
+# EXTRACT JSON
+# -----------------------------
+start = decoded.find("{")
+end = decoded.rfind("}") + 1
+
+if start != -1 and end != -1:
+    result = decoded[start:end]
+else:
+    result = decoded
 
 print("\n=== MODEL OUTPUT ===\n")
 print(result)
 
+# -----------------------------
+# VALIDATE JSON
+# -----------------------------
 try:
     parsed = json.loads(result)
     print("\n✅ Valid JSON")
-except:
+    print(json.dumps(parsed, indent=2))
+except Exception as e:
     print("\n❌ Not valid JSON")
+    print("Error:", e)
