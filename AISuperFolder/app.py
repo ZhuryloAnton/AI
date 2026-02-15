@@ -101,10 +101,9 @@ inputs = tokenizer.apply_chat_template(
 ).to(model_device)
 # -----------------------------
 # GENERATE
-# -----------------------------
 with torch.no_grad():
     output = model.generate(
-        **inputs,
+        inputs,
         max_new_tokens=400,
         do_sample=False
     )
