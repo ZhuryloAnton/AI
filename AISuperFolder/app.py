@@ -24,7 +24,7 @@ tokenizer = AutoTokenizer.from_pretrained(
 base_model = AutoModelForCausalLM.from_pretrained(
     base_model_id,
     device_map="auto",
-    torch_dtype=torch.float16,
+    dtype=torch.float16,
     trust_remote_code=True
 )
 
@@ -61,9 +61,6 @@ Education:
 BSc Computer Science, University of California, 2020
 """
 
-# =====================================================
-# PROMPT
-# =====================================================
 prompt = f"""
 Extract information from the CV and return ONLY valid JSON.
 
@@ -81,28 +78,17 @@ CV:
 {cv_text}
 """
 
-# =====================================================
-# BUILD CHAT FORMAT SAFELY
-# =====================================================
 messages = [
-    {
-        "role": "system",
-        "content": "You are a professional CV parser. Return ONLY valid JSON. No explanations."
-    },
-    {
-        "role": "user",
-        "content": prompt
-    }
+    {"role": "system", "content": "You are a CV parser. Return ONLY valid JSON."},
+    {"role": "user", "content": prompt}
 ]
 
-# Convert to formatted chat string (NO tensors yet)
 chat_text = tokenizer.apply_chat_template(
     messages,
     tokenize=False,
     add_generation_prompt=True
 )
 
-# Tokenize properly with attention mask
 inputs = tokenizer(
     chat_text,
     return_tensors="pt",
@@ -113,23 +99,20 @@ inputs = tokenizer(
 inputs = {k: v.to(model_device) for k, v in inputs.items()}
 
 # =====================================================
-# GENERATE
+# 🔥 BYPASS PEFT GENERATE
 # =====================================================
 with torch.no_grad():
-    output = model.generate(
+    output = base_model.generate(
         input_ids=inputs["input_ids"],
         attention_mask=inputs["attention_mask"],
         max_new_tokens=400,
         do_sample=False,
         pad_token_id=tokenizer.eos_token_id,
-        use_cache = False
+        use_cache=False
     )
 
 decoded = tokenizer.decode(output[0], skip_special_tokens=True)
 
-# =====================================================
-# EXTRACT JSON SAFELY
-# =====================================================
 start = decoded.find("{")
 end = decoded.rfind("}") + 1
 
@@ -141,9 +124,6 @@ else:
 print("\n=== MODEL OUTPUT ===\n")
 print(result)
 
-# =====================================================
-# VALIDATE JSON
-# =====================================================
 try:
     parsed = json.loads(result)
     print("\n✅ Valid JSON")
