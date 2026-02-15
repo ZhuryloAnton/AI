@@ -1,6 +1,6 @@
 import torch
 import json
-from transformer import AutoTokenizer, AutoModelForCausalLM
+from transformers import AutoTokenizer, AutoModelForCausalLM
 from peft import PeftModel
 
 base_model = "microsoft/phi-4-mini"
