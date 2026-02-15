@@ -24,7 +24,7 @@ tokenizer = AutoTokenizer.from_pretrained(
 base_model = AutoModelForCausalLM.from_pretrained(
     base_model_id,
     device_map="auto",
-    dtype=torch.float16,
+    torch_dtype=torch.float16,
     trust_remote_code=True
 )
 
