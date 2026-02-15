@@ -3,7 +3,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from peft import PeftModel
 
 # Model IDs
-BASE_MODEL = "microsoft/Phi-4-mini-instruct""
+BASE_MODEL = "microsoft/Phi-4-mini-instruct"
 ADAPTER_ID = "rmtlabs/phi-4-mini-adapter-v1"
 
 # Device (use "cuda" if you have a GPU)
