@@ -98,10 +98,7 @@ messages = [
 inputs = tokenizer.apply_chat_template(
     messages,
     return_tensors="pt"
-)
-
-inputs = {k: v.to(model_device) for k, v in inputs.items()}
-
+).to(model_device)
 # -----------------------------
 # GENERATE
 # -----------------------------
