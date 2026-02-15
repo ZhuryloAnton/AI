@@ -3,7 +3,7 @@ import json
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from peft import PeftModel
 
-base_model = "microsoft/phi-4-mini"
+base_model = "microsoft/Phi-4-mini-instruct"
 adapter = "rmtlabs/phi-4-mini-adapter-v1"
 
 tokenizer = AutoTokenizer.from_pretrained(base_model)
