@@ -8,7 +8,8 @@ adapter_id = "rmtlabs/phi-4-mini-adapter-v1"
 # Load tokenizer
 tokenizer = AutoTokenizer.from_pretrained(
     base_model_id,
-    trust_remote_code=True
+    trust_remote_code=True,
+    use_fast=False   # VERY IMPORTANT
 )
 
 # Load base model FIRST
