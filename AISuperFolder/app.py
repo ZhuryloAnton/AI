@@ -3,7 +3,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from peft import PeftModel
 
 # Model IDs
-BASE_MODEL = "microsoft/Phi-4-mini-instruct"
+BASE_MODEL = "microsoft/Phi-4-mini-instruct""
 ADAPTER_ID = "rmtlabs/phi-4-mini-adapter-v1"
 
 # Device (use "cuda" if you have a GPU)
@@ -15,6 +15,7 @@ tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL, trust_remote_code=True)
 # 2. Load base model
 model = AutoModelForCausalLM.from_pretrained(
     BASE_MODEL,
+    revision="cfbefacb99257ffa30c83adab238a50856ac3083",
     torch_dtype=torch.bfloat16,  # or torch.float16
     trust_remote_code=True,
     device_map="auto",
