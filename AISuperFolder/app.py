@@ -3,24 +3,24 @@ import json
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from peft import PeftModel
 
-# -----------------------------
+# =====================================================
 # CONFIG
-# -----------------------------
+# =====================================================
 base_model_id = "microsoft/Phi-4-mini-instruct"
 adapter_id = "rmtlabs/phi-4-mini-adapter-v1"
 
-# -----------------------------
+# =====================================================
 # LOAD TOKENIZER
-# -----------------------------
+# =====================================================
 tokenizer = AutoTokenizer.from_pretrained(
     base_model_id,
     trust_remote_code=True,
     use_fast=False
 )
 
-# -----------------------------
+# =====================================================
 # LOAD BASE MODEL
-# -----------------------------
+# =====================================================
 base_model = AutoModelForCausalLM.from_pretrained(
     base_model_id,
     device_map="auto",
@@ -28,9 +28,9 @@ base_model = AutoModelForCausalLM.from_pretrained(
     trust_remote_code=True
 )
 
-# -----------------------------
+# =====================================================
 # ATTACH ADAPTER
-# -----------------------------
+# =====================================================
 model = PeftModel.from_pretrained(
     base_model,
     adapter_id
@@ -41,9 +41,9 @@ model_device = next(model.parameters()).device
 
 print("✅ Model + Adapter loaded successfully")
 
-# -----------------------------
+# =====================================================
 # SAMPLE CV
-# -----------------------------
+# =====================================================
 cv_text = """
 John Smith
 Email: john.smith@email.com
@@ -61,9 +61,9 @@ Education:
 BSc Computer Science, University of California, 2020
 """
 
-# -----------------------------
+# =====================================================
 # PROMPT
-# -----------------------------
+# =====================================================
 prompt = f"""
 Extract information from the CV and return ONLY valid JSON.
 
@@ -81,9 +81,9 @@ CV:
 {cv_text}
 """
 
-# -----------------------------
-# CHAT FORMAT (IMPORTANT)
-# -----------------------------
+# =====================================================
+# BUILD CHAT FORMAT SAFELY
+# =====================================================
 messages = [
     {
         "role": "system",
@@ -95,24 +95,40 @@ messages = [
     }
 ]
 
-inputs = tokenizer.apply_chat_template(
+# Convert to formatted chat string (NO tensors yet)
+chat_text = tokenizer.apply_chat_template(
     messages,
-    return_tensors="pt"
-).to(model_device)
-# -----------------------------
+    tokenize=False,
+    add_generation_prompt=True
+)
+
+# Tokenize properly with attention mask
+inputs = tokenizer(
+    chat_text,
+    return_tensors="pt",
+    padding=True,
+    truncation=True
+)
+
+inputs = {k: v.to(model_device) for k, v in inputs.items()}
+
+# =====================================================
 # GENERATE
+# =====================================================
 with torch.no_grad():
     output = model.generate(
-        inputs,
+        input_ids=inputs["input_ids"],
+        attention_mask=inputs["attention_mask"],
         max_new_tokens=400,
-        do_sample=False
+        do_sample=False,
+        pad_token_id=tokenizer.eos_token_id
     )
 
 decoded = tokenizer.decode(output[0], skip_special_tokens=True)
 
-# -----------------------------
-# EXTRACT JSON
-# -----------------------------
+# =====================================================
+# EXTRACT JSON SAFELY
+# =====================================================
 start = decoded.find("{")
 end = decoded.rfind("}") + 1
 
@@ -124,9 +140,9 @@ else:
 print("\n=== MODEL OUTPUT ===\n")
 print(result)
 
-# -----------------------------
+# =====================================================
 # VALIDATE JSON
-# -----------------------------
+# =====================================================
 try:
     parsed = json.loads(result)
     print("\n✅ Valid JSON")
