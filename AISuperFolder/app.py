@@ -121,7 +121,8 @@ with torch.no_grad():
         attention_mask=inputs["attention_mask"],
         max_new_tokens=400,
         do_sample=False,
-        pad_token_id=tokenizer.eos_token_id
+        pad_token_id=tokenizer.eos_token_id,
+        use_cache = False
     )
 
 decoded = tokenizer.decode(output[0], skip_special_tokens=True)
