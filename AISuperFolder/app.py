@@ -27,6 +27,7 @@ model = PeftModel.from_pretrained(
 )
 
 model.eval()
+model_device = next(model.parameters()).device
 
 print("✅ Model + Adapter loaded successfully")
 
